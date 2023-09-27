@@ -5,11 +5,11 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class PersistableObject : MonoBehaviour
 {
-    public virtual void Save(GameDataWrite write)
+    public virtual void Save(GameDataWrite writer)
     {
-        write.Write(transform.localPosition);
-        write.Write(transform.localRotation);
-        write.Write(transform.localScale);
+        writer.Write(transform.localPosition);
+        writer.Write(transform.localRotation);
+        writer.Write(transform.localScale);
     }
 
     public virtual void Load(GameDataReader reader)

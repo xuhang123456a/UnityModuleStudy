@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -14,10 +15,16 @@ public class Game : PersistableObject
     private List<Shape> shapes;
 
     public KeyCode createKey = KeyCode.C;
+    public KeyCode destroyKey = KeyCode.X;
     public KeyCode newGameKey = KeyCode.N;
     public KeyCode saveKey = KeyCode.S;
     public KeyCode loadKey = KeyCode.L;
 
+    public float CreationSpeed { get; set; }
+    private float creationProgress;
+    public float DestructionSpeed { get; set; }
+    private float destructionProgress;
+    
     private void Awake()
     {
         shapes = new List<Shape>();
@@ -33,9 +40,13 @@ public class Game : PersistableObject
         {
             CreateShape();
         }
-        else if (Input.GetKeyDown(KeyCode.X))
+        else if (Input.GetKeyDown(KeyCode.V))
         {
             CreateShape();
+        }
+        else if (Input.GetKeyDown(destroyKey))
+        {
+            DestroyShape();
         }
         else if (Input.GetKey(newGameKey))
         {
@@ -50,6 +61,20 @@ public class Game : PersistableObject
             BeginNewGame();
             storage.Load(this);
         }
+
+        creationProgress += Time.deltaTime * CreationSpeed;
+        while (creationProgress > 1f)
+        {
+            creationProgress -=1f;
+            CreateShape();
+        }
+        
+        destructionProgress += Time.deltaTime * DestructionSpeed;
+        while (destructionProgress > 1f)
+        {
+            destructionProgress -=1f;
+            DestroyShape();
+        }
     }
 
     private void CreateShape()
@@ -63,11 +88,23 @@ public class Game : PersistableObject
         shapes.Add(instance);
     }
 
+    private void DestroyShape()
+    {
+        if (shapes.Count > 0)
+        {
+            int index = Random.Range(0, shapes.Count);
+            shapeFactory.Reclaim(shapes[index]);
+            int lastIndex = shapes.Count - 1;
+            shapes[index] = shapes[lastIndex];
+            shapes.RemoveAt(lastIndex);
+        }
+    }
+
     private void BeginNewGame()
     {
         for (int i = 0; i < shapes.Count; i++)
         {
-            Destroy(shapes[i].gameObject);
+            shapeFactory.Reclaim(shapes[i]);
         }
 
         shapes.Clear();

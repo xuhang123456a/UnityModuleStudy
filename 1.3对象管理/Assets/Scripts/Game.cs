@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -29,6 +30,10 @@ public class Game : PersistableObject
     private void Update()
     {
         if (Input.GetKey(createKey))
+        {
+            CreateShape();
+        }
+        else if (Input.GetKeyDown(KeyCode.X))
         {
             CreateShape();
         }
@@ -97,5 +102,10 @@ public class Game : PersistableObject
             instance.Load(reader);
             shapes.Add(instance);
         }
+    }
+
+    private void OnGUI()
+    {
+        GUI.Label(new Rect(100, 100, 100, 100), shapes.Count.ToString());
     }
 }

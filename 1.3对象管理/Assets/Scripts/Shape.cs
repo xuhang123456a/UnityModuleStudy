@@ -1,13 +1,10 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Shape : PersistableObject
 {
     private MeshRenderer _meshRenderer;
     private int shapeId = int.MinValue;
-    private static int colorPropertyId = Shader.PropertyToID("Color");
+    private static int colorPropertyId = Shader.PropertyToID("_Color");
     private static MaterialPropertyBlock sharedPropertyBlock;
     
     public int ShapeId
@@ -47,6 +44,8 @@ public class Shape : PersistableObject
             sharedPropertyBlock = new MaterialPropertyBlock();
         sharedPropertyBlock.SetColor(colorPropertyId,color);
         _meshRenderer.SetPropertyBlock(sharedPropertyBlock);
+        Debug.Log(color);
+        Debug.Log(_meshRenderer.material.color);
     }
 
     public override void Save(GameDataWrite writer)

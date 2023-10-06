@@ -1,18 +1,22 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class Game : PersistableObject
 {
-    private const int saveVersion = 1;
+    private const int saveVersion = 2;
     public PersistentStorage storage;
 
     public ShapeFactory shapeFactory;
     private List<Shape> shapes;
+
+    public int levelCount;
 
     public KeyCode createKey = KeyCode.C;
     public KeyCode destroyKey = KeyCode.X;
@@ -24,14 +28,28 @@ public class Game : PersistableObject
     private float creationProgress;
     public float DestructionSpeed { get; set; }
     private float destructionProgress;
-    
-    private void Awake()
-    {
-        shapes = new List<Shape>();
-    }
+
+    private int loadedLevelBuildIndex;
 
     private void Start()
     {
+        shapes = new List<Shape>();
+
+        if (Application.isEditor)
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene loadedScene = SceneManager.GetSceneAt(i);
+                if (loadedScene.name.Contains("Level "))
+                {
+                    SceneManager.SetActiveScene(loadedScene);
+                    loadedLevelBuildIndex = loadedScene.buildIndex;
+                    return;
+                }
+            }
+        }
+
+        StartCoroutine(LoadLevel(1));
     }
 
     private void Update()
@@ -61,18 +79,30 @@ public class Game : PersistableObject
             BeginNewGame();
             storage.Load(this);
         }
+        else
+        {
+            for (int i = 1; i <= levelCount; i++)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha0 + i))
+                {
+                    BeginNewGame();
+                    StartCoroutine(LoadLevel(i));
+                    return;
+                }
+            }
+        }
 
         creationProgress += Time.deltaTime * CreationSpeed;
         while (creationProgress > 1f)
         {
-            creationProgress -=1f;
+            creationProgress -= 1f;
             CreateShape();
         }
-        
+
         destructionProgress += Time.deltaTime * DestructionSpeed;
         while (destructionProgress > 1f)
         {
-            destructionProgress -=1f;
+            destructionProgress -= 1f;
             DestroyShape();
         }
     }
@@ -110,9 +140,23 @@ public class Game : PersistableObject
         shapes.Clear();
     }
 
+    private IEnumerator LoadLevel(int levelBuildIndex)
+    {
+        enabled = false;
+        if (loadedLevelBuildIndex > 0)
+        {
+            yield return SceneManager.UnloadSceneAsync(loadedLevelBuildIndex);
+        }
+        yield return SceneManager.LoadSceneAsync(levelBuildIndex, LoadSceneMode.Additive);
+        SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(levelBuildIndex));
+        loadedLevelBuildIndex = levelBuildIndex;
+        enabled = true;
+    }
+
     public override void Save(GameDataWrite writer)
     {
         writer.Write(shapes.Count);
+        writer.Write(loadedLevelBuildIndex);
         for (int i = 0; i < shapes.Count; i++)
         {
             writer.Write(shapes[i].ShapeId);
@@ -131,6 +175,7 @@ public class Game : PersistableObject
         }
 
         int count = version < 0 ? -version : reader.ReadInt();
+        StartCoroutine(LoadLevel(version < 2 ? 1 : reader.ReadInt()));
         for (int i = 0; i < count; i++)
         {
             int shapeId = version > 0 ? reader.ReadInt() : 0;

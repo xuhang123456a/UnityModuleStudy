@@ -81,7 +81,7 @@ public class Graph_Extention : MonoBehaviour
 
     static Vector3 Sphere(float u,float v,float t)
     {
-        //ÇòÌå
+        //çƒä½“
         //Vector3 p;
         //float r = Mathf.Cos(pi * 0.5f * v);
         //p.x = r * Mathf.Sin(pi * u);
@@ -89,7 +89,7 @@ public class Graph_Extention : MonoBehaviour
         //p.z = r * Mathf.Cos(pi * u);
         //return p;
 
-        //Âö³åÇò
+        //è„‰å†²çƒ
         Vector3 p;
         float r = 0.8f + Mathf.Sin(pi * (6f*u +t))*0.1f;
         r += Mathf.Sin(pi * (4f * v + t)) * 0.1f;
@@ -102,7 +102,7 @@ public class Graph_Extention : MonoBehaviour
 
     static Vector3 Torus(float u, float v, float t)
     {
-        //Ò»¸ö×Ô½»µÄÖ÷Öá»·
+        //ä¸€ä¸ªè‡ªäº¤çš„ä¸»è½´ç¯
         //Vector3 p;
         //float s =  Mathf.Cos(pi  * v) + 0.5f;
         //p.x = s * Mathf.Sin(pi * u);
@@ -110,7 +110,7 @@ public class Graph_Extention : MonoBehaviour
         //p.z = s * Mathf.Cos(pi * u);
         //return p;
 
-        //À®°È»·
+        //å–‡å­ç¯
         //Vector3 p;
         //float r1 = 1f;
         //float s = Mathf.Cos(pi * v) + r1;
@@ -119,7 +119,7 @@ public class Graph_Extention : MonoBehaviour
         //p.z = s * Mathf.Cos(pi * u);
         //return p;
 
-        //»·»·Ãæ
+        //ç¯ç¯é¢
         Vector3 p;
         float r1 = 1f;
         float r2 = 0.5f;

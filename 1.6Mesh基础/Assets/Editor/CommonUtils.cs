@@ -9,5 +9,13 @@ namespace Editor
         {
             EditorApplication.isPaused = !EditorApplication.isPaused;
         }
+
+        [MenuItem("Tools/添加预编译指令")]
+        public static void SetCustomPreprocessorDirective()
+        {
+            string defineSymbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            defineSymbols += ";USING_COROUTINE";
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, defineSymbols);
+        }
     }
 }

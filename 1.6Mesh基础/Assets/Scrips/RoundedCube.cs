@@ -3,37 +3,41 @@ using UnityEngine;
 
 namespace Scrips
 {
-    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class RoundedCube : MonoBehaviour
+    public class RoundedCube : BaseMesh
     {
         public int xSize, ySize, zSize;
 
         public int roundness;
 
-        public Vector3[] vertices;
-
-        private Mesh mesh;
-
-        WaitForSeconds wait = new WaitForSeconds(0.016f);
-
-        private Vector3[] normals;
-
-        private Color32[] cubeUV;
-
         private void Awake()
         {
-            Generate();
+            if (useCoroutine)
+            {
+                StartCoroutine(Generate(useCoroutine));
+            }
+            else
+            {
+                Generate();
+            }
         }
 
         private void Generate()
         {
             GetComponent<MeshFilter>().mesh = mesh = new Mesh();
             mesh.name = "Procedural Cube";
-            StartCoroutine(CreateVertices());
-            // CreateTriangles();
+            CreateVertices();
+            CreateTriangles();
         }
 
-        private IEnumerator CreateVertices()
+        private IEnumerator Generate(bool useCoroutine)
+        {
+            GetComponent<MeshFilter>().mesh = mesh = new Mesh();
+            mesh.name = "Procedural Cube";
+            StartCoroutine(CreateVertices(useCoroutine));
+            yield break;
+        }
+
+        private void CreateVertices()
         {
             int cornerVertices = 8;
             int edgeVertices = (xSize + ySize + zSize - 3) * 4;
@@ -51,22 +55,18 @@ namespace Scrips
                 for (int x = 0; x <= xSize; x++)
                 {
                     SetVertex(v++, x, y, 0);
-                    yield return wait;
                 }
                 for (int z = 1; z <= zSize; z++)
                 {
                     SetVertex(v++, xSize, y, z);
-                    yield return wait;
                 }
                 for (int x = xSize - 1; x >= 0; x--)
                 {
                     SetVertex(v++, x, y, zSize);
-                    yield return wait;
                 }
                 for (int z = zSize - 1; z > 0; z--)
                 {
                     SetVertex(v++, 0, y, z);
-                    yield return wait;
                 }
             }
             for (int z = 1; z < zSize; z++)
@@ -74,7 +74,6 @@ namespace Scrips
                 for (int x = 1; x < xSize; x++)
                 {
                     SetVertex(v++, x, ySize, z);
-                    yield return wait;
                 }
             }
             for (int z = 1; z < zSize; z++)
@@ -82,7 +81,64 @@ namespace Scrips
                 for (int x = 1; x < xSize; x++)
                 {
                     SetVertex(v++, x, 0, z);
-                    yield return wait;
+                }
+            }
+
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.colors32 = cubeUV;
+        }
+
+        private IEnumerator CreateVertices(bool useCoroutine)
+        {
+            int cornerVertices = 8;
+            int edgeVertices = (xSize + ySize + zSize - 3) * 4;
+            int faceVertics = (
+                (xSize - 1) * (ySize - 1) +
+                (xSize - 1) * (zSize - 1) +
+                (ySize - 1) * (zSize - 1)) * 2;
+            vertices = new Vector3[cornerVertices + edgeVertices + faceVertics];
+            normals = new Vector3[vertices.Length];
+            cubeUV = new Color32[vertices.Length];
+
+            int v = 0;
+            for (int y = 0; y <= ySize; y++)
+            {
+                for (int x = 0; x <= xSize; x++)
+                {
+                    SetVertex(v++, x, y, 0);
+                    yield return Wait;
+                }
+                for (int z = 1; z <= zSize; z++)
+                {
+                    SetVertex(v++, xSize, y, z);
+                    yield return Wait;
+                }
+                for (int x = xSize - 1; x >= 0; x--)
+                {
+                    SetVertex(v++, x, y, zSize);
+                    yield return Wait;
+                }
+                for (int z = zSize - 1; z > 0; z--)
+                {
+                    SetVertex(v++, 0, y, z);
+                    yield return Wait;
+                }
+            }
+            for (int z = 1; z < zSize; z++)
+            {
+                for (int x = 1; x < xSize; x++)
+                {
+                    SetVertex(v++, x, ySize, z);
+                    yield return Wait;
+                }
+            }
+            for (int z = 1; z < zSize; z++)
+            {
+                for (int x = 1; x < xSize; x++)
+                {
+                    SetVertex(v++, x, 0, z);
+                    yield return Wait;
                 }
             }
 
@@ -91,9 +147,99 @@ namespace Scrips
             mesh.colors32 = cubeUV;
 
             // CreateTriangles();
-            StartCoroutine(CreateTriangles());
+            StartCoroutine(CreateTriangles(useCoroutine));
         }
 
+        private void CreateTriangles()
+        {
+            int quads = (xSize * ySize + xSize * zSize + ySize * zSize) * 2;
+            int[] triangles = new int[quads * 6];
+            int ring = (xSize + zSize) * 2;
+            // int t = 0, v = 0;
+            int[] trianglesZ = new int[(xSize * ySize) * 12];
+            int[] trianglesX = new int[(ySize * zSize) * 12];
+            int[] trianglesY = new int[(xSize * zSize) * 12];
+            int tZ = 0, tX = 0, tY = 0, v = 0;
+
+            for (int y = 0; y < ySize; y++, v++)
+            {
+                for (int q = 0; q < xSize; q++, v++)
+                {
+                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
+                }
+                for (int q = 0; q < zSize; q++, v++)
+                {
+                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+                }
+                for (int q = 0; q < xSize; q++, v++)
+                {
+                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
+                }
+                for (int q = 0; q < zSize - 1; q++, v++)
+                {
+                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+                }
+                tX = SetQuad(trianglesX, tX, v, v - ring + 1, v + ring, v + 1);
+            }
+            tY = CreateTopFace(trianglesY, tY, ring);
+            tY = CreateBottomFace(trianglesY, tY, ring);
+
+            mesh.subMeshCount = 3;
+            mesh.SetTriangles(trianglesZ, 0);
+            mesh.SetTriangles(trianglesX, 1);
+            mesh.SetTriangles(trianglesY, 2);
+
+            CreateColliders();
+        }
+
+        private IEnumerator CreateTriangles(bool useCoroutine)
+        {
+            int quads = (xSize * ySize + xSize * zSize + ySize * zSize) * 2;
+            int[] triangles = new int[quads * 6];
+            int ring = (xSize + zSize) * 2;
+            // int t = 0, v = 0;
+            int[] trianglesZ = new int[(xSize * ySize) * 12];
+            int[] trianglesX = new int[(ySize * zSize) * 12];
+            int[] trianglesY = new int[(xSize * zSize) * 12];
+            int tZ = 0, tX = 0, tY = 0, v = 0;
+
+            for (int y = 0; y < ySize; y++, v++)
+            {
+                for (int q = 0; q < xSize; q++, v++)
+                {
+                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
+                    yield return Wait;
+                }
+                for (int q = 0; q < zSize; q++, v++)
+                {
+                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+                    yield return Wait;
+                }
+                for (int q = 0; q < xSize; q++, v++)
+                {
+                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
+                    yield return Wait;
+                }
+                for (int q = 0; q < zSize - 1; q++, v++)
+                {
+                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
+                    yield return Wait;
+                }
+                tX = SetQuad(trianglesX, tX, v, v - ring + 1, v + ring, v + 1);
+                yield return Wait;
+            }
+            tY = CreateTopFace(trianglesY, tY, ring);
+            tY = CreateBottomFace(trianglesY, tY, ring);
+
+            mesh.subMeshCount = 3;
+            mesh.SetTriangles(trianglesZ, 0);
+            mesh.SetTriangles(trianglesX, 1);
+            mesh.SetTriangles(trianglesY, 2);
+
+            CreateColliders();
+        }
+
+        
         private void SetVertex(int i, int x, int y, int z)
         {
             Vector3 inner = vertices[i] = new Vector3(x, y, z);
@@ -127,54 +273,7 @@ namespace Scrips
             vertices[i] = inner + normals[i] * roundness;
             cubeUV[i] = new Color32((byte)x, (byte)y, (byte)z, 0);
         }
-
-        private IEnumerator CreateTriangles()
-        {
-            int quads = (xSize * ySize + xSize * zSize + ySize * zSize) * 2;
-            int[] triangles = new int[quads * 6];
-            int ring = (xSize + zSize) * 2;
-            // int t = 0, v = 0;
-            int[] trianglesZ = new int[(xSize * ySize) * 12];
-            int[] trianglesX = new int[(ySize * zSize) * 12];
-            int[] trianglesY = new int[(xSize * zSize) * 12];
-            int tZ = 0, tX = 0, tY = 0, v = 0;
-
-            for (int y = 0; y < ySize; y++, v++)
-            {
-                for (int q = 0; q < xSize; q++, v++)
-                {
-                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
-                    yield return wait;
-                }
-                for (int q = 0; q < zSize; q++, v++)
-                {
-                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
-                    yield return wait;
-                }
-                for (int q = 0; q < xSize; q++, v++)
-                {
-                    tZ = SetQuad(trianglesZ, tZ, v, v + 1, v + ring, v + ring + 1);
-                    yield return wait;
-                }
-                for (int q = 0; q < zSize - 1; q++, v++)
-                {
-                    tX = SetQuad(trianglesX, tX, v, v + 1, v + ring, v + ring + 1);
-                    yield return wait;
-                }
-                tX = SetQuad(trianglesX, tX, v, v - ring + 1, v + ring, v + 1);
-                yield return wait;
-            }
-            tY = CreateTopFace(trianglesY, tY, ring);
-            tY = CreateBottomFace(trianglesY, tY, ring);
-            
-            mesh.subMeshCount = 3;
-            mesh.SetTriangles(trianglesZ, 0);
-            mesh.SetTriangles(trianglesX, 1);
-            mesh.SetTriangles(trianglesY, 2);
-
-            CreateColliders();
-        }
-
+        
         private void CreateColliders()
         {
             AddBoxCollider(xSize, ySize - roundness * 2, zSize - roundness * 2);
@@ -184,21 +283,21 @@ namespace Scrips
             Vector3 min = Vector3.one * roundness;
             Vector3 half = new Vector3(xSize, ySize, zSize) * 0.5f;
             Vector3 max = new Vector3(xSize, ySize, zSize) - min;
-            
-            AddCapsuleCollider(0,half.x,min.y,min.z);
-            AddCapsuleCollider(0,half.x,min.y,max.z);
-            AddCapsuleCollider(0,half.x,max.y,min.z);
-            AddCapsuleCollider(0,half.x,max.y,max.z);
-            
-            AddCapsuleCollider(0,min.x,half.y,min.z);
-            AddCapsuleCollider(0,min.x,half.y,max.z);
-            AddCapsuleCollider(0,max.x,half.y,min.z);
-            AddCapsuleCollider(0,max.x,half.y,max.z);
-            
-            AddCapsuleCollider(0,min.x,min.y,half.z);
-            AddCapsuleCollider(0,min.x,max.y,half.z);
-            AddCapsuleCollider(0,max.x,min.y,half.z);
-            AddCapsuleCollider(0,max.x,max.y,half.z);
+
+            AddCapsuleCollider(0, half.x, min.y, min.z);
+            AddCapsuleCollider(0, half.x, min.y, max.z);
+            AddCapsuleCollider(0, half.x, max.y, min.z);
+            AddCapsuleCollider(0, half.x, max.y, max.z);
+
+            AddCapsuleCollider(0, min.x, half.y, min.z);
+            AddCapsuleCollider(0, min.x, half.y, max.z);
+            AddCapsuleCollider(0, max.x, half.y, min.z);
+            AddCapsuleCollider(0, max.x, half.y, max.z);
+
+            AddCapsuleCollider(0, min.x, min.y, half.z);
+            AddCapsuleCollider(0, min.x, max.y, half.z);
+            AddCapsuleCollider(0, max.x, min.y, half.z);
+            AddCapsuleCollider(0, max.x, max.y, half.z);
         }
 
         private void AddBoxCollider(float x, float y, float z)

@@ -3,31 +3,32 @@ using UnityEngine;
 
 namespace Scrips
 {
-    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class Cube : MonoBehaviour
+    public class Cube : BaseMesh
     {
         public int xSize, ySize, zSize;
 
-        public Vector3[] vertices;
-
-        private Mesh mesh;
-        
-        WaitForSeconds wait = new WaitForSeconds(0.05f);
-
         private void Awake()
         {
-            Generate();
+            if (useCoroutine)
+            {
+                StartCoroutine(Generate(useCoroutine));
+            }
+            else
+            {
+                Generate();
+            }
         }
 
+        #region NoUseCoroutine
         private void Generate()
         {
             GetComponent<MeshFilter>().mesh = mesh = new Mesh();
             mesh.name = "Procedural Cube";
-            StartCoroutine(CreateVertices());
-            // CreateTriangles();
+            CreateVertices();
+            CreateTriangles();
         }
 
-        private IEnumerator CreateVertices()
+        private void CreateVertices()
         {
             int cornerVertices = 8;
             int edgeVertices = (xSize + ySize + zSize - 3) * 4;
@@ -43,22 +44,18 @@ namespace Scrips
                 for (int x = 0; x <= xSize; x++)
                 {
                     vertices[v++] = new Vector3(x, y, 0);
-                    yield return wait;
                 }
                 for (int z = 1; z <= zSize; z++)
                 {
                     vertices[v++] = new Vector3(xSize, y, z);
-                    yield return wait;
                 }
                 for (int x = xSize - 1; x >= 0; x--)
                 {
                     vertices[v++] = new Vector3(x, y, zSize);
-                    yield return wait;
                 }
                 for (int z = zSize - 1; z > 0; z--)
                 {
                     vertices[v++] = new Vector3(0, y, z);
-                    yield return wait;
                 }
             }
             for (int z = 1; z < zSize; z++)
@@ -66,7 +63,6 @@ namespace Scrips
                 for (int x = 1; x < xSize; x++)
                 {
                     vertices[v++] = new Vector3(x, ySize, z);
-                    yield return wait;
                 }
             }
             for (int z = 1; z < zSize; z++)
@@ -74,17 +70,13 @@ namespace Scrips
                 for (int x = 1; x < xSize; x++)
                 {
                     vertices[v++] = new Vector3(x, 0, z);
-                    yield return wait;
                 }
             }
 
             mesh.vertices = vertices;
-
-            // CreateTriangles();
-            StartCoroutine(CreateTriangles());
         }
 
-        private IEnumerator CreateTriangles()
+        private void CreateTriangles()
         {
             int quads = (xSize * ySize + xSize * zSize + ySize * zSize) * 2;
             int[] triangles = new int[quads * 6];
@@ -97,18 +89,107 @@ namespace Scrips
                 {
                     t = SetQuad(triangles, t, v, v + 1, v + ring, v + ring + 1);
                     mesh.triangles = triangles;
-                    yield return wait;
                 }
                 t = SetQuad(triangles, t, v, v - ring + 1, v + ring, v + 1);
                 mesh.triangles = triangles;
-                yield return wait;
             }
             t = CreateTopFace(triangles, t, ring);
             t = CreateBottomFace(triangles, t, ring);
-            
+
             mesh.triangles = triangles;
         }
+        #endregion
 
+        #region UseCoroutine
+        private IEnumerator Generate(bool useCoroutine)
+        {
+            GetComponent<MeshFilter>().mesh = mesh = new Mesh();
+            mesh.name = "Procedural Cube";
+            StartCoroutine(CreateVertices(useCoroutine));
+            yield break;
+        }
+
+        private IEnumerator CreateVertices(bool useCoroutine)
+        {
+            int cornerVertices = 8;
+            int edgeVertices = (xSize + ySize + zSize - 3) * 4;
+            int faceVertics = (
+                (xSize - 1) * (ySize - 1) +
+                (xSize - 1) * (zSize - 1) +
+                (ySize - 1) * (zSize - 1)) * 2;
+            vertices = new Vector3[cornerVertices + edgeVertices + faceVertics];
+
+            int v = 0;
+            for (int y = 0; y <= ySize; y++)
+            {
+                for (int x = 0; x <= xSize; x++)
+                {
+                    vertices[v++] = new Vector3(x, y, 0);
+                    yield return Wait;
+                }
+                for (int z = 1; z <= zSize; z++)
+                {
+                    vertices[v++] = new Vector3(xSize, y, z);
+                    yield return Wait;
+                }
+                for (int x = xSize - 1; x >= 0; x--)
+                {
+                    vertices[v++] = new Vector3(x, y, zSize);
+                    yield return Wait;
+                }
+                for (int z = zSize - 1; z > 0; z--)
+                {
+                    vertices[v++] = new Vector3(0, y, z);
+                    yield return Wait;
+                }
+            }
+            for (int z = 1; z < zSize; z++)
+            {
+                for (int x = 1; x < xSize; x++)
+                {
+                    vertices[v++] = new Vector3(x, ySize, z);
+                    yield return Wait;
+                }
+            }
+            for (int z = 1; z < zSize; z++)
+            {
+                for (int x = 1; x < xSize; x++)
+                {
+                    vertices[v++] = new Vector3(x, 0, z);
+                    yield return Wait;
+                }
+            }
+
+            mesh.vertices = vertices;
+            StartCoroutine(CreateTriangles(useCoroutine));
+        }
+
+        private IEnumerator CreateTriangles(bool useCoroutine)
+        {
+            int quads = (xSize * ySize + xSize * zSize + ySize * zSize) * 2;
+            int[] triangles = new int[quads * 6];
+            int ring = (xSize + zSize) * 2;
+            int t = 0, v = 0;
+
+            for (int y = 0; y < ySize; y++, v++)
+            {
+                for (int q = 0; q < ring - 1; q++, v++)
+                {
+                    t = SetQuad(triangles, t, v, v + 1, v + ring, v + ring + 1);
+                    mesh.triangles = triangles;
+                    yield return Wait;
+                }
+                t = SetQuad(triangles, t, v, v - ring + 1, v + ring, v + 1);
+                mesh.triangles = triangles;
+                yield return Wait;
+            }
+            t = CreateTopFace(triangles, t, ring);
+            t = CreateBottomFace(triangles, t, ring);
+
+            mesh.triangles = triangles;
+        }
+        #endregion
+        
         private static int SetQuad(int[] triangles, int i, int v00, int v10, int v01, int v11)
         {
             triangles[i] = v00;
